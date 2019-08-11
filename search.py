@@ -8,6 +8,7 @@ Created on Thu Aug  1 13:28:46 2019
 
 import json
 import os
+from collections import Counter
 from datetime import datetime
 from elasticsearch import Elasticsearch
 
@@ -19,7 +20,6 @@ def decode(string):
 
 
 class Messages:
-
     def add_data(self, json_source):
         """load data from json file"""
         with open(json_source) as json_file:
@@ -35,8 +35,6 @@ class Messages:
             es.index(index=index.lower(), doc_type='messages', id=num, body=row)
             print(num)
             # print(ind1)
-
-
 
 
 def get_members(data_dict):
@@ -98,13 +96,33 @@ def count_word(data_dict, word, members):
                 member_word[msg['sender_name']] += 1
                 # print('{}: {}'.format(decode(msg['sender_name']), decode(msg['content'])))
     print('===')
+    if count == 0:
+        print('"{}" appeared: {} times'.format(word, count))
+        return
     print('"{}" appeared: {} times'.format(word, count))
     for member in member_word:
         print('{}: {}  ({}%)'.format(decode(member), member_word[member], round(member_word[member]*100/count,1)))
     return member_word
 
-
-
+def count_words(data_dict, words, members):
+    """
+    get number of messages in which appeard given words
+    no case sensivite, input encoding: utf-8
+    input: words = list of words
+    for example ['apple', 'banana', 'orange']
+    returns dict
+    """
+    member_words = {}
+    for member in members:
+        member_words[member] = 0
+    for word in words:
+        member_words = dict(Counter(count_word(data_dict, word, members)) + Counter(member_words))
+    total=sum(member_words.values())
+    print('===')
+    print('Words: {}'.format(words))
+    for member in member_words:
+        print('{}: {}  ({}%)'.format(decode(member), member_words[member], round(member_words[member]*100/total,1)))
+    return member_words
 
 def count_sticker(data_dict, members):
     """
@@ -165,49 +183,6 @@ def get_most_reacted_photos(data_dict, members, min_reactions):
                 print('{}: {} ({})'.format(decode(msg['sender_name']), msg['photos'][0]['uri'], date))
 
 
-def print_elements(full_data):
-    """
-    print all messages
-    """
-    for num in range(len(full_data['messages'])):
-        # print(num)
-        # print(decode(full_data['messages'][num]['sender_name']))
-        if 'content' in full_data['messages'][num]:
-            pass
-            # print('content: ')
-            # print(decode(full_data['messages'][num]['content']))
-        elif 'photos' in full_data['messages'][num]:
-            pass
-            # print('photos: ')
-            # print(full_data['messages'][num]['photos'][0]['uri'])
-        elif 'videos' in full_data['messages'][num]:
-            pass
-            # print('videos: ')
-            # print(full_data['messages'][num]['videos'][0]['uri'])
-        elif 'audio_files' in full_data['messages'][num]:
-            pass
-            # print('audio_files: ')
-            # print(full_data['messages'][num]['audio_files'][0]['uri'])
-        elif 'gifs' in full_data['messages'][num]:
-            pass
-            # print('gifs: ')
-            # print(full_data['messages'][num]['gifs'][0]['uri'])
-        elif 'sticker' in full_data['messages'][num]:
-            pass
-            # print('sticker: ')
-            # print(full_data['messages'][num]['sticker']['uri'])
-        elif 'files' in full_data['messages'][num]:
-            pass
-            # print('files: ')
-            # print(full_data['messages'][num]['files']['uri'])
-        elif 'plan' in full_data['messages'][num]:
-            pass
-            # print('plan: ')
-            # print(full_data['messages'][num]['plan']['uri'])
-        else:
-            print(num)
-            print(full_data['messages'][num])
-
 
 es = Elasticsearch()
 json_source = 'message_1.json'
@@ -217,10 +192,14 @@ data_dict = data.add_data(json_source)
 # data.elastic()
 
 members = get_members(data_dict)
-members_msg = count_msg(data_dict, members)
-members_word = count_word(data_dict, 'ares', members)
-members_stickers = count_sticker(data_dict, members)
-members_photos = count_photos(data_dict, members)
+words = ['word1', 'word2']
+# member_words = count_words(data_dict, words, members)
+
+
+# members_msg = count_msg(data_dict, members)
+# members_word = count_word(data_dict, 'word', members)
+# members_stickers = count_sticker(data_dict, members)
+# members_photos = count_photos(data_dict, members)
 
 # print_report(members_photos, members)
 # get_most_reacted_text(data_dict, members, 4)
