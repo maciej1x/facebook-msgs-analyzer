@@ -79,7 +79,6 @@ def get_messages_by_month(df):
         if month < 10:
             month = '0' + str(month)
         df_month.at[index, 'year-month'] = str(year) + '-' + str(month)
-        print(row['date'], year, month)
     df_month = df_month.drop(columns='date')
     df_month = df_month[['year-month', 'messages']]
     df_month = df_month.groupby(['year-month'])['messages'].agg('sum')
@@ -97,6 +96,7 @@ def plot_by_month(df_month):
          legend=True,
          figsize=(15,10),
          title='Total messages per month',
+
          )
 
 # df_day = get_messages_by_day(df)
@@ -104,6 +104,7 @@ def plot_by_month(df_month):
 df_month = get_messages_by_month(df)
 print(df_month.tail())
 plot_by_month(df_month)
+print(df_month.info())
 
 
 
