@@ -1,4 +1,4 @@
-# Facebook Messages Analyze
+# Facebook Messages Analyzer
 Get charts, statistics and pandas DataFrame from messages on facebook
 
 ## How to get messages?
