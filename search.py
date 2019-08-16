@@ -313,9 +313,10 @@ print(df_month.tail())
 plot_by_month(df_month)
 print(df_month.info())
 
+
 # df = decode_column(df, 'sender_name')
 
-
+#####unfinished
 # def get_members_stats_monthly(df):
 # df_day = pd.Series(data=df['timestamp_ms'])
 # df_day = df.timestamp_ms.dt.floor('D')
