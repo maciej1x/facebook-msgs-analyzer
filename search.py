@@ -8,6 +8,7 @@ Created on Thu Aug  1 13:28:46 2019
 
 import json
 import os
+import pandas as pd
 from collections import Counter
 from datetime import datetime
 from elasticsearch import Elasticsearch
@@ -137,7 +138,7 @@ def count_sticker(data_dict, members):
             count += 1
             member_sticker[msg['sender_name']] += 1
     print('===')
-    print('Total stickers send: {}'.format(count))
+    print('Total stickers sent: {}'.format(count))
     for member in member_sticker:
         print('{}: {}'.format(decode(member), member_sticker[member]))
     return member_sticker
@@ -157,7 +158,7 @@ def count_photos(data_dict, members):
             count += 1
             member_photos[msg['sender_name']] += 1
     print('===')
-    print('Total photos send: {}'.format(count))
+    print('Total photos sent: {}'.format(count))
     for member in member_photos:
         print('{}: {}'.format(decode(member), member_photos[member]))
     return member_photos
@@ -184,23 +185,143 @@ def get_most_reacted_photos(data_dict, members, min_reactions):
 
 
 
-es = Elasticsearch()
-json_source = 'message_1.json'
+def decode_column(df, column):
+    """
+    decodes every string value in column to utf-8
+    for messages use column = 'content'
+    for authors use column = 'sender_name'
+    WARNING! for big dataframes it may take long
+    """
+    for index, row in df.iterrows():
+        if isinstance(row[column], str):
+            df.at[index, column] = decode(row[column])
+    return df
 
-data = Messages()
-data_dict = data.add_data(json_source)
-# data.elastic()
-
-members = get_members(data_dict)
-words = ['word1', 'word2']
-# member_words = count_words(data_dict, words, members)
 
 
-# members_msg = count_msg(data_dict, members)
-# members_word = count_word(data_dict, 'word', members)
-# members_stickers = count_sticker(data_dict, members)
-# members_photos = count_photos(data_dict, members)
+def get_messages_by_day(df):
+    """
+    returns dataframe with messages summed by day
+    """
+    df_day = pd.Series(data=df['timestamp_ms'])
+    df_day = df_day.dt.floor('D')
+    df_day = df_day.value_counts()
+    df_day = df_day.rename_axis('date')
+    df_day = df_day.reset_index(name='messages')
+    df_day = df_day.sort_values(by=['date'])
+    return df_day
 
-# print_report(members_photos, members)
-# get_most_reacted_text(data_dict, members, 4)
-# get_most_reacted_photos(data_dict, members, 4)
+
+def plot_by_day(df_day):
+    """
+    plot chart for messages per day
+    """
+    df_day[['date','messages']].plot('date',
+         legend=True,
+         figsize=(15,10),
+         title='Total messages per day',
+         )
+
+def get_messages_by_month(df):
+    """
+    returns dataframe with messages summed by year-month
+    """
+    df_month = get_messages_by_day(df)
+    df_month = df_month.sort_index(inplace=False)
+    # df_month['year-month'] = str(pd.to_datetime(df_month['date'].values)[0].year) + '-' + str(pd.to_datetime(df_month['date'].values)[0].month)
+    for index, row in df_month.iterrows():
+
+        year = pd.to_datetime(df_month['date'].values)[index].year
+        month = pd.to_datetime(df_month['date'].values)[index].month
+        if month < 10:
+            month = '0' + str(month)
+        df_month.at[index, 'year-month'] = str(year) + '-' + str(month)
+    df_month = df_month.drop(columns='date')
+    df_month = df_month[['year-month', 'messages']]
+    df_month = df_month.groupby(['year-month'])['messages'].agg('sum')
+    df_month = df_month.rename_axis('date')
+    df_month = df_month.reset_index(name='messages')
+    df_month = df_month.sort_values(by=['date'])
+    return df_month
+
+
+def plot_by_month(df_month):
+    """
+    plot chart for messages per month
+    """
+    df_month[['date','messages']].plot('date',
+         legend=True,
+         figsize=(15,10),
+         title='Total messages per month',
+         )
+
+
+
+def get_members_stats(df):
+    """
+    returns dataframe with number of
+    different types of messages
+    for every member of consersation
+    """
+    members = list(df.sender_name.unique())
+    df_members_stats = pd.DataFrame()
+    for member in members:
+        df_member = df.loc[df['sender_name'] == member]
+        df_member = df_member.drop(columns=['reactions',
+                                            'timestamp_ms',
+                                            'type',
+                                            'users'],
+            axis=1)
+        count = df_member.count()
+        count['sender_name'] = member
+        count = count.drop(labels='sender_name')
+        total = pd.Series(count.sum(), index=['total'])
+        member_series = pd.Series(data=decode(member), index=['member'])
+        member_series = member_series.append([count, total])
+        df_members_stats = df_members_stats.append(member_series, ignore_index=True)
+
+    df_members_stats = df_members_stats.astype(int, errors='ignore')
+    df_members_stats = df_members_stats[['member',
+                                         'audio_files',
+                                         'content',
+                                         'files',
+                                         'gifs',
+                                         'photos',
+                                         'plan',
+                                         'share',
+                                         'sticker',
+                                         'videos',
+                                         'total']]
+    df_members_stats  = df_members_stats.rename(columns={'content':'text msgs'})
+    return df_members_stats
+
+
+
+file = 'message_1.json'
+
+data_dict = Messages()
+data_dict = data_dict.add_data(file)
+
+df = pd.DataFrame(data_dict['messages'])
+df['timestamp_ms'] = pd.to_datetime(df['timestamp_ms'], unit='ms')
+
+
+# df_day = get_messages_by_day(df)
+# print(df_day.head())
+df_month = get_messages_by_month(df)
+print(df_month.tail())
+plot_by_month(df_month)
+print(df_month.info())
+
+# df = decode_column(df, 'sender_name')
+
+
+# def get_members_stats_monthly(df):
+# df_day = pd.Series(data=df['timestamp_ms'])
+# df_day = df.timestamp_ms.dt.floor('D')
+
+# df_stats = df
+
+# df_stats['timestamp_ms'] = df_stats.timestamp_ms.dt.floor('D')
+
+# print(df_stats['timestamp_ms'].head())
