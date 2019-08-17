@@ -19,14 +19,17 @@ Load JSON file of one conversation (default name: messages_1.json)<br />
 - [X] <b>get_most_reacted_text</b> get messages with certain minimum of reactions
 - [X] <b>get_most_reacted_photos</b> get photos with certain minimum of reactions
 - [X] <b>get_messages_by_day</b> get pandas dataframe with messages summed by day<br />
-- [X] <b>plot_by_day</b>plot chart for messages per day<br />
-- [X] <b>get_messages_by_month</b>dataframe with messages summed by year-month<br />
+- [X] <b>plot_by_day</b> plot chart for messages per day<br />
+- [X] <b>get_messages_by_month</b> dataframe with messages summed by year-month<br />
 - [X] <b>plot_by_month</b> plot chart for messages per month
+- [X] <b>most_common_words</b> get most common words, and their count used in conversation
 
 ## To do
-- [X] merge setup.py and setup_pandas.py<br />
-- [ ] get pandas dataframe with messages summed year-month grouped by user<br />
+- [X] merge setup.py and setup_pandas.py
+- [ ] get pandas dataframe with messages summed year-month grouped by user
 - [ ] plot chart for messages per month for every user
+- [X] count most used words
+- [ ] get number of reactions given and received for every member
 
 ## Additional info:
 If you want to decode string to UTF-8 you can use <b>decode</b> function, or <b>decode_column</b> to decode entire column on dataframe.

@@ -296,6 +296,29 @@ def get_members_stats(df):
     return df_members_stats
 
 
+def most_common_words(df, min_chacters, number_of_returned_words):
+    """
+    get most common words, and their count used in conversation
+    df - input dataframe
+    min_characters - minimum length of word to count
+    number_of_returned_words - number of words to return
+    returns list of tuples in format:
+        [(word, count), (word2, count), ...]
+    """
+    c = df['content'].str.cat(sep=';')
+    c = decode(c)
+    c = c.replace(' ', ';')
+    c = c.replace(',', '')
+    c = c.replace('!', '')
+    c = c.replace('?', '')
+    c = c.replace('.', '')
+    c = c.split(';')
+    c = pd.DataFrame(c, columns=['text'])
+    c['len'] = c.text.str.len()
+    c = c[c.len >= min_chacters]
+    most_common = Counter(c['text'].str.lower()).most_common(number_of_returned_words)
+    return most_common
+
 
 file = 'message_1.json'
 
@@ -308,16 +331,17 @@ df['timestamp_ms'] = pd.to_datetime(df['timestamp_ms'], unit='ms')
 
 # df_day = get_messages_by_day(df)
 # print(df_day.head())
-df_month = get_messages_by_month(df)
-print(df_month.tail())
-plot_by_month(df_month)
-print(df_month.info())
+# df_month = get_messages_by_month(df)
+# print(df_month.tail())
+# plot_by_month(df_month)
+# print(df_month.info())
 
 
 # df = decode_column(df, 'sender_name')
 
 #####unfinished
 # def get_members_stats_monthly(df):
+# members = get_members(data_dict)
 # df_day = pd.Series(data=df['timestamp_ms'])
 # df_day = df.timestamp_ms.dt.floor('D')
 
@@ -326,3 +350,12 @@ print(df_month.info())
 # df_stats['timestamp_ms'] = df_stats.timestamp_ms.dt.floor('D')
 
 # print(df_stats['timestamp_ms'].head())
+
+# df_member = df_stats['sender_name'] == members[0]
+
+# print(df_member.head())
+
+# print(df_day.head())
+
+
+
