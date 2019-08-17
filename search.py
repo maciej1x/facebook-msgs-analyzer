@@ -10,8 +10,9 @@ import json
 import os
 import pandas as pd
 from collections import Counter
+import copy
 from datetime import datetime
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch as es
 
 
 
@@ -35,7 +36,6 @@ class Messages:
         for num, row in enumerate(data_dict['messages']):
             es.index(index=index.lower(), doc_type='messages', id=num, body=row)
             print(num)
-            # print(ind1)
 
 
 def get_members(data_dict):
@@ -58,7 +58,6 @@ def get_other_members(data_dict, members):
     return members
 
 
-
 def count_msg(data_dict, members):
     """get total text messages send by each member"""
     member_msg = {}
@@ -68,7 +67,6 @@ def count_msg(data_dict, members):
         author = msg['sender_name']
         member_msg[author] += 1
     return member_msg
-
 
 
 def print_report(data, members):
@@ -105,6 +103,7 @@ def count_word(data_dict, word, members):
         print('{}: {}  ({}%)'.format(decode(member), member_word[member], round(member_word[member]*100/count,1)))
     return member_word
 
+
 def count_words(data_dict, words, members):
     """
     get number of messages in which appeard given words
@@ -125,6 +124,7 @@ def count_words(data_dict, words, members):
         print('{}: {}  ({}%)'.format(decode(member), member_words[member], round(member_words[member]*100/total,1)))
     return member_words
 
+
 def count_sticker(data_dict, members):
     """
     get number of stickers send by each member
@@ -142,7 +142,6 @@ def count_sticker(data_dict, members):
     for member in member_sticker:
         print('{}: {}'.format(decode(member), member_sticker[member]))
     return member_sticker
-
 
 
 def count_photos(data_dict, members):
@@ -163,6 +162,7 @@ def count_photos(data_dict, members):
         print('{}: {}'.format(decode(member), member_photos[member]))
     return member_photos
 
+
 def get_most_reacted_text(data_dict, members, min_reactions):
     """
     get messages with reactions <= min_reactions
@@ -173,6 +173,7 @@ def get_most_reacted_text(data_dict, members, min_reactions):
                 date = datetime.fromtimestamp(msg['timestamp_ms']/1000).strftime('%Y-%m-%d %H:%M:%S')
                 print('{}: {} ({})'.format(decode(msg['sender_name']), decode(msg['content']), date))
 
+
 def get_most_reacted_photos(data_dict, members, min_reactions):
     """
     get photos with reactions <= min_reactions
@@ -182,7 +183,6 @@ def get_most_reacted_photos(data_dict, members, min_reactions):
             if 'reactions' in msg and len(msg['reactions'])>= min_reactions:
                 date = datetime.fromtimestamp(msg['timestamp_ms']/1000).strftime('%Y-%m-%d %H:%M:%S')
                 print('{}: {} ({})'.format(decode(msg['sender_name']), msg['photos'][0]['uri'], date))
-
 
 
 def decode_column(df, column):
@@ -196,7 +196,6 @@ def decode_column(df, column):
         if isinstance(row[column], str):
             df.at[index, column] = decode(row[column])
     return df
-
 
 
 def get_messages_by_day(df):
@@ -222,13 +221,13 @@ def plot_by_day(df_day):
          title='Total messages per day',
          )
 
+
 def get_messages_by_month(df):
     """
     returns dataframe with messages summed by year-month
     """
     df_month = get_messages_by_day(df)
     df_month = df_month.sort_index(inplace=False)
-    # df_month['year-month'] = str(pd.to_datetime(df_month['date'].values)[0].year) + '-' + str(pd.to_datetime(df_month['date'].values)[0].month)
     for index, row in df_month.iterrows():
 
         year = pd.to_datetime(df_month['date'].values)[index].year
@@ -254,7 +253,6 @@ def plot_by_month(df_month):
          figsize=(15,10),
          title='Total messages per month',
          )
-
 
 
 def get_members_stats(df):
@@ -316,46 +314,37 @@ def most_common_words(df, min_chacters, number_of_returned_words):
     c = pd.DataFrame(c, columns=['text'])
     c['len'] = c.text.str.len()
     c = c[c.len >= min_chacters]
-    most_common = Counter(c['text'].str.lower()).most_common(number_of_returned_words)
-    return most_common
+    most_com = Counter(c['text'].str.lower())
+    most_com = most_com.most_common(number_of_returned_words)
+    return most_com
 
 
-file = 'message_1.json'
+def get_members_stats_monthly(df):
+    """
+    returns dataframe with number of
+    messages sent by every member
+    in every month
+    """
+    df_stats = pd.DataFrame(df, copy=True)
+    df_stats['timestamp_ms'] = pd.to_datetime(df_stats['timestamp_ms'], unit='ms')
+    df_stats['timestamp_ms'] = df_stats.timestamp_ms.dt.to_period('M')
+    df_stats = df_stats.groupby(by=['sender_name', 'timestamp_ms']).size()
+    # df_stats = pd.DataFrame(df_stats)
+    # df_stats.columns = ['Member', 'Date', 'Count']
+    return df_stats
+
+
+file = 'message_1_full.json'
 
 data_dict = Messages()
 data_dict = data_dict.add_data(file)
 
 df = pd.DataFrame(data_dict['messages'])
-df['timestamp_ms'] = pd.to_datetime(df['timestamp_ms'], unit='ms')
 
+df_stats = get_members_stats_monthly(df)
+print(df_stats.head())
 
-# df_day = get_messages_by_day(df)
-# print(df_day.head())
-# df_month = get_messages_by_month(df)
-# print(df_month.tail())
-# plot_by_month(df_month)
-# print(df_month.info())
-
-
-# df = decode_column(df, 'sender_name')
-
-#####unfinished
-# def get_members_stats_monthly(df):
-# members = get_members(data_dict)
-# df_day = pd.Series(data=df['timestamp_ms'])
-# df_day = df.timestamp_ms.dt.floor('D')
-
-# df_stats = df
-
-# df_stats['timestamp_ms'] = df_stats.timestamp_ms.dt.floor('D')
-
-# print(df_stats['timestamp_ms'].head())
-
-# df_member = df_stats['sender_name'] == members[0]
-
-# print(df_member.head())
-
-# print(df_day.head())
-
-
-
+df_stats.plot(legend=True,
+     figsize=(15,10),
+     title='Total messages per month',
+     )
