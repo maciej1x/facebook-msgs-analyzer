@@ -8,6 +8,7 @@ Created on Thu Aug  1 13:28:46 2019
 
 import json
 import os
+import numpy as np
 import pandas as pd
 from collections import Counter
 import copy
@@ -215,51 +216,19 @@ def plot_by_day(df_day):
     """
     plot chart for messages per day
     """
-    df_day[['date','messages']].plot('date',
-         legend=True,
-         figsize=(15,10),
-         title='Total messages per day',
-         )
-
-
-def get_messages_by_month(df):
-    """
-    returns dataframe with messages summed by year-month
-    """
-    df_month = get_messages_by_day(df)
-    df_month = df_month.sort_index(inplace=False)
-    for index, row in df_month.iterrows():
-
-        year = pd.to_datetime(df_month['date'].values)[index].year
-        month = pd.to_datetime(df_month['date'].values)[index].month
-        if month < 10:
-            month = '0' + str(month)
-        df_month.at[index, 'year-month'] = str(year) + '-' + str(month)
-    df_month = df_month.drop(columns='date')
-    df_month = df_month[['year-month', 'messages']]
-    df_month = df_month.groupby(['year-month'])['messages'].agg('sum')
-    df_month = df_month.rename_axis('date')
-    df_month = df_month.reset_index(name='messages')
-    df_month = df_month.sort_values(by=['date'])
-    return df_month
-
-
-def plot_by_month(df_month):
-    """
-    plot chart for messages per month
-    """
-    df_month[['date','messages']].plot('date',
-         legend=True,
-         figsize=(15,10),
-         title='Total messages per month',
-         )
+    df_day[['date','messages']].plot(
+            'date',
+            legend=True,
+            figsize=(15,10),
+            title='Total messages per day',
+            )
 
 
 def get_members_stats(df):
     """
     returns dataframe with number of
     different types of messages
-    for every member of consersation
+    for every member of consersation and total
     """
     members = list(df.sender_name.unique())
     df_members_stats = pd.DataFrame()
@@ -326,25 +295,82 @@ def get_members_stats_monthly(df):
     in every month
     """
     df_stats = pd.DataFrame(df, copy=True)
+    df_stats = df_stats.drop(columns=['type'])
     df_stats['timestamp_ms'] = pd.to_datetime(df_stats['timestamp_ms'], unit='ms')
     df_stats['timestamp_ms'] = df_stats.timestamp_ms.dt.to_period('M')
-    df_stats = df_stats.groupby(by=['sender_name', 'timestamp_ms']).size()
-    # df_stats = pd.DataFrame(df_stats)
-    # df_stats.columns = ['Member', 'Date', 'Count']
-    return df_stats
+    df_stats = df_stats.groupby(by=['timestamp_ms', 'sender_name']).count()
+    df_stats = df_stats.loc[:].sum(axis=1)
+    df_stats = pd.DataFrame(df_stats)
+    df_stats.columns = ['Messages']
+    df_stats = df_stats.reset_index(level=['timestamp_ms', 'sender_name'])
+    df_stats = decode_column(df_stats, 'sender_name')
+    df_stats.columns = ['Month', 'User', 'Messages']
 
+    #create final dataframe
+    df_monthly = pd.DataFrame()
+    months = np.arange(min(df_stats['Month']),
+                       max(df_stats['Month'])+1,
+                       dtype='datetime64[M]')
+    df_monthly['Month'] = months
+    df_monthly['Month'] = df_monthly.Month.dt.to_period('M')
+
+    #add data for every user
+    users = df_stats.User.unique()
+    for user in users:
+        df_temp = df_stats[df_stats['User']==user]
+        df_temp = df_temp.drop(columns=['User'])
+        df_temp.columns = ['Month', user]
+        df_monthly = df_monthly.merge(df_temp, on='Month')
+    df_monthly['Total']= df_monthly.sum(axis=1, numeric_only=True)
+    df_monthly = df_monthly.fillna(0)
+    return df_monthly
+
+
+def plot_by_month_members(df_monthly, without_total, logaritmic):
+    """
+    plot chart for messages per month
+    for every user
+    df_monthly - input dataframe from get_members_stats_monthly()
+    without_total - if skip Total column (True/False)
+    logaritmic - if set yaxis logaritmic (True/False)
+    """
+    xticks=np.arange(min(df_monthly['Month']),
+                     max(df_monthly['Month'])+1,
+                     dtype='datetime64[M]')
+    if without_total == True:
+        df_monthly = df_monthly.drop(columns='Total')
+    df_monthly.plot(
+            x='Month',
+            legend=True,
+            figsize=(15,10),
+            title='Messages per month',
+            xticks=xticks,
+            logy=logaritmic
+            )
+
+
+def plot_by_month_total(df_monthly, logaritmic):
+    """
+    plot chart for total messages per month
+    df_monthly - input dataframe from get_members_stats_monthly()
+    logaritmic - if set yaxis logaritmic (True/False)
+    """
+    xticks=np.arange(min(df_monthly['Month']),
+                     max(df_monthly['Month'])+1,
+                     dtype='datetime64[M]')
+    df_monthly[['Month', 'Total']].plot(
+            x='Month',
+            legend=True,
+            figsize=(15,10),
+            title='Messages per month',
+            xticks=xticks,
+            logy=logaritmic
+            )
 
 file = 'message_1_full.json'
 
 data_dict = Messages()
 data_dict = data_dict.add_data(file)
-
 df = pd.DataFrame(data_dict['messages'])
-
-df_stats = get_members_stats_monthly(df)
-print(df_stats.head())
-
-df_stats.plot(legend=True,
-     figsize=(15,10),
-     title='Total messages per month',
-     )
+df_monthly = get_members_stats_monthly(df)
+plot_by_month_total(df_monthly, True)
