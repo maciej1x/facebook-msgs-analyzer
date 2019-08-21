@@ -1,3 +1,4 @@
+.gitignore
 .spyproject
 __pycache__
 *.json

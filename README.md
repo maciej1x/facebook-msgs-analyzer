@@ -26,12 +26,10 @@ Load JSON file of one conversation (default name: messages_1.json)<br />
 - [X] <b>get_members_stats_monthly</b> get number of messages sent by every member and total messages in every month
 
 ## To do
-- [X] merge setup.py and setup_pandas.py
-- [X] update <b>get_messages_by_month</b> (remove iterating by rows) - 19.08.2019 deleted and merged with get_members_stats_monthly
-- [X] get pandas dataframe with messages summed year-month grouped by user
-- [X] plot chart for messages per month for every user
-- [X] count most used words
-- [ ] get number of reactions given and received for every member
+- [ ] <b>number_of_reactions_for_members</b> - returns dataframe with number of different reactions sent by every member and total
+- [ ] <b>plot_number_of_reactions_for_member</b> bar chart for number_of_reactions_for_member()
+- [ ] <b>number_of_reactions</b> returns dataframe with number of total usage of every reaction
+- [ ] <b>plot_number_of_reactions</b> bar chart for number_of_reactions()
 
 ## Additional info:
 If you want to decode string to UTF-8 you can use <b>decode</b> function, or <b>decode_column</b> to decode entire column on dataframe.
