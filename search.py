@@ -385,21 +385,30 @@ def number_of_reactions_for_members(df):
     reactions = df_reactions.reaction.unique()
 
     #get final dataframe
-    df_mem_reac = pd.DataFrame(columns=reactions)
+    df_mem_react = pd.DataFrame(columns=reactions)
     for actor in actors:
         df_temp = df_reactions[df_reactions['actor']==actor]
         df_temp = df_temp.groupby('reaction').count()
         actor = decode(actor)
         df_temp.columns=[actor]
-        df_mem_reac = df_mem_reac.append(df_temp[actor])
+        df_mem_react = df_mem_react.append(df_temp[actor])
+    df_mem_react.index.names = ['Member']
 
-    return df_mem_reac
+    return df_mem_react
 
 
-def plot_number_of_reactions_for_member():
+def plot_number_of_reactions_for_member(df_mem_react):
     """
     bar chart for number_of_reactions_for_member()
     """
+    df_mem_react.plot.bar(
+        legend=True,
+        figsize=(10,10),
+        title='Reactions per member',
+        subplots=False,
+        logy=False,
+        stacked=True
+        )
     pass
 
 
@@ -426,6 +435,8 @@ data_dict = data_dict.add_data(file)
 df = pd.DataFrame(data_dict['messages'])
 
 df_mem_react = number_of_reactions_for_members(df)
+
+plot_number_of_reactions_for_member(df_mem_react)
 
 # df_monthly = get_members_stats_monthly(df)
 # plot_by_month_total(df_monthly, True)
