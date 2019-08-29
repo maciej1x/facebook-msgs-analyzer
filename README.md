@@ -24,10 +24,10 @@ Load JSON file of one conversation (default name: messages_1.json)<br />
 - [X] <b>plot_by_month_total</b> plot chart for total messages per month
 - [X] <b>most_common_words</b> get most common words, and their count used in conversation
 - [X] <b>get_members_stats_monthly</b> get number of messages sent by every member and total messages in every month
+- [X] <b>number_of_reactions_for_members</b> - returns dataframe with number of different reactions sent by every member
 
 ## To do
-- [ ] <b>number_of_reactions_for_members</b> - returns dataframe with number of different reactions sent by every member and total
-- [ ] <b>plot_number_of_reactions_for_member</b> bar chart for number_of_reactions_for_member()
+- [ ] <b>plot_number_of_reactions_for_member</b> bar chart for number_of_reactions_for_members()
 - [ ] <b>number_of_reactions</b> returns dataframe with number of total usage of every reaction
 - [ ] <b>plot_number_of_reactions</b> bar chart for number_of_reactions()
 

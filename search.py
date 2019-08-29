@@ -372,16 +372,28 @@ def number_of_reactions_for_members(df):
     """
     returns dataframe with number of
     different reactions sent by every member
-    and total
     """
     c = df.loc[~pd.isnull(df.reactions)]['reactions'] #get only reactions
     #convert to dataframe with as many columns as max reactions
     #to one message
     d = pd.DataFrame.from_dict(c.array)
-    #get final dataframe
+    #get working dataframe
     df_reactions = pd.Series(d.values.ravel('F')).dropna()
     df_reactions = pd.DataFrame.from_records(df_reactions)
     df_reactions = decode_column(df_reactions, 'reaction')
+    actors = df_reactions.actor.unique()
+    reactions = df_reactions.reaction.unique()
+
+    #get final dataframe
+    df_mem_reac = pd.DataFrame(columns=reactions)
+    for actor in actors:
+        df_temp = df_reactions[df_reactions['actor']==actor]
+        df_temp = df_temp.groupby('reaction').count()
+        actor = decode(actor)
+        df_temp.columns=[actor]
+        df_mem_reac = df_mem_reac.append(df_temp[actor])
+
+    return df_mem_reac
 
 
 def plot_number_of_reactions_for_member():
@@ -412,8 +424,20 @@ file = 'message_1_full.json'
 data_dict = Messages()
 data_dict = data_dict.add_data(file)
 df = pd.DataFrame(data_dict['messages'])
+
+df_mem_react = number_of_reactions_for_members(df)
+
 # df_monthly = get_members_stats_monthly(df)
 # plot_by_month_total(df_monthly, True)
 # plot_by_month_members(df_monthly, True, False)
 
+
+# print(df_reactions)
+
+
+
+#     df_temp.columns = ['Month', user]
+#     df_monthly = df_monthly.merge(df_temp, on='Month')
+# df_monthly['Total']= df_monthly.sum(axis=1, numeric_only=True)
+# df_monthly = df_monthly.fillna(0)
 
