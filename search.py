@@ -334,7 +334,7 @@ def plot_by_month_members(df_monthly, without_total, logaritmic):
     without_total - if skip Total column (True/False)
     logaritmic - if set yaxis logaritmic (True/False)
     """
-    xticks=np.arange(min(df_monthly['Month']),
+    xticks = np.arange(min(df_monthly['Month']),
                      max(df_monthly['Month'])+1,
                      dtype='datetime64[M]')
     if without_total == True:
@@ -361,7 +361,7 @@ def plot_by_month_total(df_monthly, logaritmic):
     df_monthly[['Month', 'Total']].plot(
             x='Month',
             legend=True,
-            figsize=(15,10),
+            figsize=(15, 10),
             title='Messages per month',
             xticks=xticks,
             logy=logaritmic
@@ -393,7 +393,7 @@ def number_of_reactions_for_members(df):
         df_temp.columns=[actor]
         df_mem_react = df_mem_react.append(df_temp[actor])
     df_mem_react.index.names = ['Member']
-
+    df_mem_react['Total']= df_mem_react.sum(axis=1, numeric_only=True)
     return df_mem_react
 
 
@@ -401,15 +401,19 @@ def plot_number_of_reactions_for_member(df_mem_react):
     """
     bar chart for number_of_reactions_for_member()
     """
-    df_mem_react.plot.bar(
+    df_for_plot = df_mem_react.drop(columns='Total')
+    ax = df_for_plot.plot.bar(
         legend=True,
-        figsize=(10,10),
+        figsize=(10, 12),
         title='Reactions per member',
         subplots=False,
         logy=False,
-        stacked=True
+        stacked=True,
+        table=False,
+        rot=0,
         )
-    pass
+    ax.set_ylabel('Number')
+    ax.set_xlabel('\nMember')
 
 
 def number_of_reactions():
@@ -437,18 +441,3 @@ df = pd.DataFrame(data_dict['messages'])
 df_mem_react = number_of_reactions_for_members(df)
 
 plot_number_of_reactions_for_member(df_mem_react)
-
-# df_monthly = get_members_stats_monthly(df)
-# plot_by_month_total(df_monthly, True)
-# plot_by_month_members(df_monthly, True, False)
-
-
-# print(df_reactions)
-
-
-
-#     df_temp.columns = ['Month', user]
-#     df_monthly = df_monthly.merge(df_temp, on='Month')
-# df_monthly['Total']= df_monthly.sum(axis=1, numeric_only=True)
-# df_monthly = df_monthly.fillna(0)
-
