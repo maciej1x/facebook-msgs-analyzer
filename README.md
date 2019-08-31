@@ -8,9 +8,10 @@ Then select JSON format and Messages.
 
 ## How to run?
 Run setup.py
-Load JSON file of one conversation (default name: messages_1.json)<br />
+Load JSON file of one conversation (default name: messages_1.json) with function <b>get_input_dataframe()</b><br />
 
 ## Functions:
+- [X] <b>get_input_dataframe</b> get pandas dataframe from json file (it is input for most of the functions)
 - [X] <b>elastic</b> index data to ElasticSearch<br />
 - [X] <b>count_msg</b> get total text messages sent by each member<br />
 - [X] <b>count_word</b> get number of messages in which appeard given word
@@ -24,12 +25,13 @@ Load JSON file of one conversation (default name: messages_1.json)<br />
 - [X] <b>plot_by_month_total</b> plot chart for total messages per month
 - [X] <b>most_common_words</b> get most common words, and their count used in conversation
 - [X] <b>get_members_stats_monthly</b> get number of messages sent by every member and total messages in every month
-- [X] <b>number_of_reactions_for_members</b> - returns dataframe with number of different reactions sent by every member
+- [X] <b>number_of_reactions_for_members</b> - returns dataframe with number of different reactions sent by every member and total
+- [X] <b>plot_number_of_reactions_for_member</b> bar chart for number_of_reactions_for_members()
+- [X] <b>total_number_of_reactions</b> returns dataframe with number of total usage of every reaction
+- [X] <b>plot_number_of_reactions</b> bar chart for total_number_of_reactions()
 
 ## To do
-- [ ] <b>plot_number_of_reactions_for_member</b> bar chart for number_of_reactions_for_members()
-- [ ] <b>number_of_reactions</b> returns dataframe with number of total usage of every reaction
-- [ ] <b>plot_number_of_reactions</b> bar chart for number_of_reactions()
+- [ ] WEBSITE<br />
 
 ## Additional info:
 If you want to decode string to UTF-8 you can use <b>decode</b> function, or <b>decode_column</b> to decode entire column on dataframe.

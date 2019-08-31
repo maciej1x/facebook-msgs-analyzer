@@ -11,7 +11,6 @@ import os
 import numpy as np
 import pandas as pd
 from collections import Counter
-import copy
 from datetime import datetime
 from elasticsearch import Elasticsearch as es
 
@@ -37,6 +36,16 @@ class Messages:
         for num, row in enumerate(data_dict['messages']):
             es.index(index=index.lower(), doc_type='messages', id=num, body=row)
             print(num)
+
+def get_input_dataframe(file):
+    """
+    get dataframe to functions
+    input: file - json file (default: message_1.json)
+    """
+    data_dict = Messages()
+    data_dict = data_dict.add_data(file)
+    df = pd.DataFrame(data_dict['messages'])
+    return df
 
 
 def get_members(data_dict):
@@ -326,7 +335,7 @@ def get_members_stats_monthly(df):
     return df_monthly
 
 
-def plot_by_month_members(df_monthly, without_total, logaritmic):
+def plot_by_month_members(df, without_total, logaritmic):
     """
     plot chart for messages per month
     for every user
@@ -334,6 +343,7 @@ def plot_by_month_members(df_monthly, without_total, logaritmic):
     without_total - if skip Total column (True/False)
     logaritmic - if set yaxis logaritmic (True/False)
     """
+    df_monthly = get_members_stats_monthly(df)
     xticks = np.arange(min(df_monthly['Month']),
                      max(df_monthly['Month'])+1,
                      dtype='datetime64[M]')
@@ -349,12 +359,13 @@ def plot_by_month_members(df_monthly, without_total, logaritmic):
             )
 
 
-def plot_by_month_total(df_monthly, logaritmic):
+def plot_by_month_total(df, logaritmic):
     """
     plot chart for total messages per month
     df_monthly - input dataframe from get_members_stats_monthly()
     logaritmic - if set yaxis logaritmic (True/False)
     """
+    df_monthly = get_members_stats_monthly(df)
     xticks=np.arange(min(df_monthly['Month']),
                      max(df_monthly['Month'])+1,
                      dtype='datetime64[M]')
@@ -397,10 +408,11 @@ def number_of_reactions_for_members(df):
     return df_mem_react
 
 
-def plot_number_of_reactions_for_member(df_mem_react):
+def plot_number_of_reactions_for_member(df):
     """
     bar chart for number_of_reactions_for_member()
     """
+    df_mem_react = number_of_reactions_for_members(df)
     df_for_plot = df_mem_react.drop(columns='Total')
     ax = df_for_plot.plot.bar(
         legend=True,
@@ -416,28 +428,30 @@ def plot_number_of_reactions_for_member(df_mem_react):
     ax.set_xlabel('\nMember')
 
 
-def number_of_reactions():
+def total_number_of_reactions(df):
     """
-    returns dataframe with number of
+    returns Series with number of
     total usage of every reaction
     """
-    pass
+    df_mem_react = number_of_reactions_for_members(df)
+    total_reactions = df_mem_react.sum()
+    return total_reactions
 
 
-def plot_number_of_reactions():
+def plot_number_of_reactions(df):
     """
-    bar chart for number_of_reactions()
+    bar chart for total_number_of_reactions()
     """
-    pass
+    total_reactions = total_number_of_reactions(df).drop('Total')
+    ax = total_reactions.plot.bar(
+        legend=False,
+        figsize=(15, 10),
+        title='Count of every reaction',
+        rot=0,
+        )
+    ax.set_ylabel('Count')
+    ax.set_xlabel('\Reaction')
 
 
 
-file = 'message_1_full.json'
-
-data_dict = Messages()
-data_dict = data_dict.add_data(file)
-df = pd.DataFrame(data_dict['messages'])
-
-df_mem_react = number_of_reactions_for_members(df)
-
-plot_number_of_reactions_for_member(df_mem_react)
+df = get_input_dataframe('message_1.json')
