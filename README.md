@@ -29,6 +29,7 @@ Load JSON file of one conversation (default name: messages_1.json) with function
 - [X] <b>plot_number_of_reactions_for_member</b> bar chart for number_of_reactions_for_members()
 - [X] <b>total_number_of_reactions</b> returns dataframe with number of total usage of every reaction
 - [X] <b>plot_number_of_reactions</b> bar chart for total_number_of_reactions()
+- [X] <b>plot_messages_by_hour</b> bar chart for total messages sent in every hour
 
 ## To do
 - [ ] WEBSITE<br />

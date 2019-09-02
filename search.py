@@ -450,8 +450,27 @@ def plot_number_of_reactions(df):
         rot=0,
         )
     ax.set_ylabel('Count')
-    ax.set_xlabel('\Reaction')
+    ax.set_xlabel('\nReaction')
 
 
+def plot_messages_by_hour(df):
+    """
+    bar chart for total messages sent
+    in every hour
+    """
+    df_stats = df['timestamp_ms']
+    df_stats = pd.to_datetime(df_stats, unit='ms')
+    df_stats = df_stats.dt.hour
+    df_stats = df_stats.value_counts().sort_index()
 
-df = get_input_dataframe('message_1.json')
+    ax = df_stats.plot.bar(
+        legend=False,
+        figsize=(15, 10),
+        title='Messages per hour',
+        rot=0,
+        )
+    ax.set_ylabel('Count')
+    ax.set_xlabel('\nHour')
+
+
+df = get_input_dataframe('message_1_full.json')
