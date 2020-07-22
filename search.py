@@ -45,120 +45,43 @@ class FbAnalyzer:
             DataFrame with counted messages of every type for every member.
 
         """
-        statistics = pd.DataFrame(index=self.members)
+        statistics = pd.DataFrame(index=self.all_members)
         total = pd.DataFrame(self.df.groupby(['sender_name']).size(), columns=['total'])
-        subcols = ['content', 'photos', 'gifs', 'share', 'audio_files', 'sticker', 'plan', ]
+        subcols = ['content', 'photos', 'gifs', 'share', 'audio_files', 'sticker', 'plan', 'files', 'videos']
         cols = [total]
         for subcol in subcols:
             cols.append(pd.DataFrame(df.dropna(subset=[subcol]).groupby(['sender_name']).size(), columns=[subcol]))
         self.statistics = pd.concat(cols, axis=1).fillna(0)
         return self.statistics
 
-    def count_msg(data_dict, members):
-        """get total text messages send by each member"""
-        member_msg = {}
-        for member in members:
-            member_msg[member] = 0
-        for msg in data_dict['messages']:
-            author = msg['sender_name']
-            member_msg[author] += 1
-        return member_msg
-    
-    
-    def print_report(data, members):
-        """print total count of messages send by each member"""
-        total=sum(data.values())
-        print('=====')
-        print('Total: {}'.format(total))
-        for member in data:
-            print('{}: {} ({}%)'.format(decode(member), data[member], round(data[member]*100/total,1)))
-        print('=====')
-    
-    
-    def count_word(data_dict, word, members):
+
+    def count_words(self, words):
         """
-        get number of messages in which appeard given word
-        no case sensivite, input encoding: utf-8
+        Count occurencies of given words for every member
+
+        Parameters
+        ----------
+        words : list
+            list of words. E.g. ['apple', 'banana'].
+
+        Returns
+        -------
+        member_words_counter : dict
+            number of occurencies for every member.
+
         """
-        member_word = {}
-        for member in members:
-            member_word[member] = 0
-        count = 0
-        for msg in data_dict['messages']:
-            if 'content' in msg:
-                if word.lower() in decode(msg['content']).lower():
-                    count += 1
-                    member_word[msg['sender_name']] += 1
-                    # print('{}: {}'.format(decode(msg['sender_name']), decode(msg['content'])))
-        print('===')
-        if count == 0:
-            print('"{}" appeared: {} times'.format(word, count))
-            return
-        print('"{}" appeared: {} times'.format(word, count))
-        for member in member_word:
-            print('{}: {}  ({}%)'.format(decode(member), member_word[member], round(member_word[member]*100/count,1)))
-        return member_word
-    
-    
-    def count_words(data_dict, words, members):
-        """
-        get number of messages in which appeard given words
-        no case sensivite, input encoding: utf-8
-        input: words = list of words
-        for example ['apple', 'banana', 'orange']
-        returns dict
-        """
-        member_words = {}
-        for member in members:
-            member_words[member] = 0
-        for word in words:
-            member_words = dict(Counter(count_word(data_dict, word, members)) + Counter(member_words))
-        total=sum(member_words.values())
-        print('===')
-        print('Words: {}'.format(words))
-        for member in member_words:
-            print('{}: {}  ({}%)'.format(decode(member), member_words[member], round(member_words[member]*100/total,1)))
-        return member_words
-    
-    
-    def count_sticker(data_dict, members):
-        """
-        get number of stickers send by each member
-        """
-        member_sticker = {}
-        for member in members:
-            member_sticker[member] = 0
-        count = 0
-        for msg in data_dict['messages']:
-            if 'sticker' in msg:
-                count += 1
-                member_sticker[msg['sender_name']] += 1
-        print('===')
-        print('Total stickers sent: {}'.format(count))
-        for member in member_sticker:
-            print('{}: {}'.format(decode(member), member_sticker[member]))
-        return member_sticker
-    
-    
-    def count_photos(data_dict, members):
-        """
-        get number of photos send by each member
-        """
-        member_photos = {}
-        for member in members:
-            member_photos[member] = 0
-        count = 0
-        for msg in data_dict['messages']:
-            if 'photos' in msg:
-                count += 1
-                member_photos[msg['sender_name']] += 1
-        print('===')
-        print('Total photos sent: {}'.format(count))
-        for member in member_photos:
-            print('{}: {}'.format(decode(member), member_photos[member]))
-        return member_photos
-    
-    
+        member_words_counter = {}
+        words = [word.lower() for word in words]
+        for member in self.all_members:
+            member_words_counter[member] = 0
+            messages = df[df.sender_name==member]['content'].dropna()
+            for message in messages:
+                for word in words:
+                    if word in message.lower():
+                        member_words_counter[member] += 1
+        return member_words_counter
+
+
     def get_most_reacted_text(data_dict, members, min_reactions):
         """
         get messages with reactions <= min_reactions
@@ -452,3 +375,4 @@ df = fb_analyzer.df
 members = fb_analyzer.members
 all_members = fb_analyzer.all_members
 statistics = fb_analyzer.get_statistics()
+member_count_words = fb_analyzer.count_words(['Marta'])
