@@ -12,8 +12,8 @@ import numpy as np
 import pandas as pd
 from collections import Counter
 from datetime import datetime
-
-
+import time
+a = datetime.fromtimestamp(time.time())
 class FbAnalyzer:
     def __init__(self, filepath):
         with open(filepath) as json_file:
@@ -45,7 +45,7 @@ class FbAnalyzer:
             DataFrame with counted messages of every type for every member.
 
         """
-        statistics = pd.DataFrame(index=self.all_members)
+        self.statistics = pd.DataFrame(index=self.all_members)
         total = pd.DataFrame(self.df.groupby(['sender_name']).size(), columns=['total'])
         subcols = ['content', 'photos', 'gifs', 'share', 'audio_files', 'sticker', 'plan', 'files', 'videos']
         cols = [total]
@@ -82,26 +82,34 @@ class FbAnalyzer:
         return member_words_counter
 
 
-    def get_most_reacted_text(data_dict, members, min_reactions):
+    def get_most_reacted_messages(self, content_type, min_reactions):
         """
-        get messages with reactions <= min_reactions
+        Get most reacted messages
+
+        Parameters
+        ----------
+        content_type : str
+            type of message. one of following:
+                content, photos, gifs, share, audio_files, sticker, plan, files, videos
+    .
+        min_reactions : int
+            minimum reactions that message got.
+
+        Returns
+        -------
+        reacted_messages : DataFrame
+            DataFrame with data.
+
         """
-        for msg in data_dict['messages']:
-            if 'content' in msg:
-                if 'reactions' in msg and len(msg['reactions'])>= min_reactions:
-                    date = datetime.fromtimestamp(msg['timestamp_ms']/1000).strftime('%Y-%m-%d %H:%M:%S')
-                    print('{}: {} ({})'.format(decode(msg['sender_name']), decode(msg['content']), date))
-    
-    
-    def get_most_reacted_photos(data_dict, members, min_reactions):
-        """
-        get photos with reactions <= min_reactions
-        """
-        for msg in data_dict['messages']:
-            if 'photos' in msg:
-                if 'reactions' in msg and len(msg['reactions'])>= min_reactions:
-                    date = datetime.fromtimestamp(msg['timestamp_ms']/1000).strftime('%Y-%m-%d %H:%M:%S')
-                    print('{}: {} ({})'.format(decode(msg['sender_name']), msg['photos'][0]['uri'], date))
+        reacted_messages = df[df.reactions.notnull()][['sender_name', 'timestamp_ms', content_type, 'reactions']]
+        reacted_messages = reacted_messages[reacted_messages[content_type].notnull()]
+        if reacted_messages.shape[0] == 0:
+            return reacted_messages
+        reacted_messages['len_reactions'] = reacted_messages.apply(lambda row: len(row.reactions), axis = 1)
+        reacted_messages['time'] = reacted_messages.apply(lambda row: datetime.fromtimestamp(round(row.timestamp_ms/1000)), axis=1)
+        reacted_messages = reacted_messages[reacted_messages.len_reactions >= min_reactions].drop(columns=['reactions', 'timestamp_ms'])
+        return reacted_messages
+
 
 
     def get_messages_by_day(df):
@@ -117,10 +125,16 @@ class FbAnalyzer:
         return df_day
     
     
-    def plot_by_day(df_day):
+    def plot_by_day(self):
         """
         plot chart for messages per day
         """
+        df_day = pd.Series(data=self.df['timestamp_ms'])
+        df_day = df_day.dt.floor('D')
+        df_day = df_day.value_counts()
+        df_day = df_day.rename_axis('date')
+        df_day = df_day.reset_index(name='messages')
+        df_day = df_day.sort_values(by=['date'])
         df_day[['date','messages']].plot(
                 'date',
                 legend=True,
@@ -376,3 +390,5 @@ members = fb_analyzer.members
 all_members = fb_analyzer.all_members
 statistics = fb_analyzer.get_statistics()
 member_count_words = fb_analyzer.count_words(['Marta'])
+reacted_messages = fb_analyzer.get_most_reacted_messages('plan', 4)
+fb_analyzer.plot_by_day()
