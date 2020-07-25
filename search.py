@@ -112,11 +112,11 @@ class FbAnalyzer:
 
 
 
-    def get_messages_by_day(df):
+    def get_messages_by_day(self):
         """
         returns dataframe with messages summed by day
         """
-        df_day = pd.Series(data=df['timestamp_ms'])
+        df_day = pd.Series(data=self.df['timestamp_ms'])
         df_day = df_day.dt.floor('D')
         df_day = df_day.value_counts()
         df_day = df_day.rename_axis('date')
@@ -129,7 +129,7 @@ class FbAnalyzer:
         """
         plot chart for messages per day
         """
-        df_day = pd.Series(data=self.df['timestamp_ms'])
+        df_day = pd.Series(data=pd.to_datetime(df['timestamp_ms'], unit='ms'))
         df_day = df_day.dt.floor('D')
         df_day = df_day.value_counts()
         df_day = df_day.rename_axis('date')
@@ -141,58 +141,29 @@ class FbAnalyzer:
                 figsize=(15,10),
                 title='Total messages per day',
                 )
-    
-    
-    def get_members_stats(df):
+
+
+    def most_common_words(self, min_chacters, number_of_returned_words):
         """
-        returns dataframe with number of
-        different types of messages
-        for every member of consersation and total
-        """
-        members = list(df.sender_name.unique())
-        df_members_stats = pd.DataFrame()
-        for member in members:
-            df_member = df.loc[df['sender_name'] == member]
-            df_member = df_member.drop(columns=['reactions',
-                                                'timestamp_ms',
-                                                'type',
-                                                'users'],
-                axis=1)
-            count = df_member.count()
-            count['sender_name'] = member
-            count = count.drop(labels='sender_name')
-            total = pd.Series(count.sum(), index=['total'])
-            member_series = pd.Series(data=decode(member), index=['member'])
-            member_series = member_series.append([count, total])
-            df_members_stats = df_members_stats.append(member_series, ignore_index=True)
-    
-        df_members_stats = df_members_stats.astype(int, errors='ignore')
-        df_members_stats = df_members_stats[['member',
-                                             'audio_files',
-                                             'content',
-                                             'files',
-                                             'gifs',
-                                             'photos',
-                                             'plan',
-                                             'share',
-                                             'sticker',
-                                             'videos',
-                                             'total']]
-        df_members_stats  = df_members_stats.rename(columns={'content':'text msgs'})
-        return df_members_stats
-    
-    
-    def most_common_words(df, min_chacters, number_of_returned_words):
-        """
-        get most common words, and their count used in conversation
-        df - input dataframe
-        min_characters - minimum length of word to count
-        number_of_returned_words - number of words to return
-        returns list of tuples in format:
+        
+
+        Parameters
+        ----------
+        min_chacters : int
+            minimum length of word to be counted.
+        number_of_returned_words : int
+            number of words to return.
+
+        Returns
+        -------
+        most_com : list
+            list of tuples in format:
             [(word, count), (word2, count), ...]
+
         """
-        c = df['content'].str.cat(sep=';')
-        c = decode(c)
+
+        c = self.df['content'].str.cat(sep=';')
+        c = self.decode(c)
         c = c.replace(' ', ';')
         c = c.replace(',', '')
         c = c.replace('!', '')
@@ -205,15 +176,21 @@ class FbAnalyzer:
         most_com = Counter(c['text'].str.lower())
         most_com = most_com.most_common(number_of_returned_words)
         return most_com
-    
-    
-    def get_members_stats_monthly(df):
+
+
+    def get_members_stats_monthly(self):
         """
-        returns dataframe with number of
+        Get dataframe with number of
         messages sent by every member
         in every month
+
+        Returns
+        -------
+        df_monthly : DataFrame
+            DataFrame with counted messages.
+
         """
-        df_stats = pd.DataFrame(df, copy=True)
+        df_stats = pd.DataFrame(self.df, copy=True)
         df_stats = df_stats.drop(columns=['type'])
         df_stats['timestamp_ms'] = pd.to_datetime(df_stats['timestamp_ms'], unit='ms')
         df_stats['timestamp_ms'] = df_stats.timestamp_ms.dt.to_period('M')
@@ -222,7 +199,6 @@ class FbAnalyzer:
         df_stats = pd.DataFrame(df_stats)
         df_stats.columns = ['Messages']
         df_stats = df_stats.reset_index(level=['timestamp_ms', 'sender_name'])
-        df_stats = decode_column(df_stats, 'sender_name')
         df_stats.columns = ['Month', 'User', 'Messages']
     
         #create final dataframe
@@ -243,17 +219,26 @@ class FbAnalyzer:
         df_monthly['Total']= df_monthly.sum(axis=1, numeric_only=True)
         df_monthly = df_monthly.fillna(0)
         return df_monthly
-    
-    
-    def plot_by_month_members(df, without_total, logaritmic):
+
+
+    def plot_by_month_members(self, without_total=True, logaritmic=True):
         """
-        plot chart for messages per month
+        Plot chart for messages per month
         for every user
-        df_monthly - input dataframe from get_members_stats_monthly()
-        without_total - if skip Total column (True/False)
-        logaritmic - if set yaxis logaritmic (True/False)
+
+        Parameters
+        ----------
+        without_total : bool, optional
+            whether draw line fot total messages. The default is True.
+        logaritmic : bool, optional
+            whether y axis should be logaritmic. The default is True.
+
+        Returns
+        -------
+        None.
+
         """
-        df_monthly = get_members_stats_monthly(df)
+        df_monthly = self.get_members_stats_monthly()
         xticks = np.arange(min(df_monthly['Month']),
                          max(df_monthly['Month'])+1,
                          dtype='datetime64[M]')
@@ -269,13 +254,22 @@ class FbAnalyzer:
                 )
     
     
-    def plot_by_month_total(df, logaritmic):
+    def plot_by_month_total(self, logaritmic=True):
         """
-        plot chart for total messages per month
-        df_monthly - input dataframe from get_members_stats_monthly()
-        logaritmic - if set yaxis logaritmic (True/False)
+        Plot chart for messages per month
+        only total
+
+        Parameters
+        ----------
+        logaritmic : bool, optional
+            whether y axis should be logaritmic. The default is True.
+
+        Returns
+        -------
+        None.
+
         """
-        df_monthly = get_members_stats_monthly(df)
+        df_monthly = self.get_members_stats_monthly()
         xticks=np.arange(min(df_monthly['Month']),
                          max(df_monthly['Month'])+1,
                          dtype='datetime64[M]')
@@ -287,8 +281,8 @@ class FbAnalyzer:
                 xticks=xticks,
                 logy=logaritmic
                 )
-    
-    
+
+
     def number_of_reactions_for_members(df):
         """
         returns dataframe with number of
@@ -391,4 +385,7 @@ all_members = fb_analyzer.all_members
 statistics = fb_analyzer.get_statistics()
 member_count_words = fb_analyzer.count_words(['Marta'])
 reacted_messages = fb_analyzer.get_most_reacted_messages('plan', 4)
-fb_analyzer.plot_by_day()
+# fb_analyzer.plot_by_day()
+# df_monthly = fb_analyzer.get_members_stats_monthly()
+fb_analyzer.plot_by_month_members(logaritmic=False)
+fb_analyzer.plot_by_month_total(logaritmic=False)
