@@ -13,7 +13,8 @@ import pandas as pd
 from collections import Counter
 from datetime import datetime
 import time
-a = datetime.fromtimestamp(time.time())
+
+
 class FbAnalyzer:
     def __init__(self, filepath):
         with open(filepath) as json_file:
@@ -283,19 +284,24 @@ class FbAnalyzer:
                 )
 
 
-    def number_of_reactions_for_members(df):
+    def number_of_reactions_for_members(self):
         """
-        returns dataframe with number of
-        different reactions sent by every member
+        Get DataFrame with number of every reaction for every member
+
+        Returns
+        -------
+        df_mem_react : DataFrame
+            DataFrame with number of every reaction for every member. Columns are reactions, rows are members.
+
         """
-        c = df.loc[~pd.isnull(df.reactions)]['reactions'] #get only reactions
+        c = self.df.loc[~pd.isnull(df.reactions)]['reactions'] #get only reactions
         #convert to dataframe with as many columns as max reactions
         #to one message
         d = pd.DataFrame.from_dict(c.array)
         #get working dataframe
         df_reactions = pd.Series(d.values.ravel('F')).dropna()
         df_reactions = pd.DataFrame.from_records(df_reactions)
-        df_reactions = decode_column(df_reactions, 'reaction')
+        df_reactions['reaction'] = df_reactions['reaction'].apply(self.decode)
         actors = df_reactions.actor.unique()
         reactions = df_reactions.reaction.unique()
     
@@ -304,19 +310,24 @@ class FbAnalyzer:
         for actor in actors:
             df_temp = df_reactions[df_reactions['actor']==actor]
             df_temp = df_temp.groupby('reaction').count()
-            actor = decode(actor)
+            actor = self.decode(actor)
             df_temp.columns=[actor]
             df_mem_react = df_mem_react.append(df_temp[actor])
         df_mem_react.index.names = ['Member']
         df_mem_react['Total']= df_mem_react.sum(axis=1, numeric_only=True)
         return df_mem_react
-    
-    
-    def plot_number_of_reactions_for_member(df):
+
+    def plot_number_of_reactions_for_member(self):
         """
-        bar chart for number_of_reactions_for_member()
+        Draw bar chart containing number of reactions for every member.
+
+        Returns
+        -------
+        None.
+
         """
-        df_mem_react = number_of_reactions_for_members(df)
+
+        df_mem_react = self.number_of_reactions_for_members()
         df_for_plot = df_mem_react.drop(columns='Total')
         ax = df_for_plot.plot.bar(
             legend=True,
@@ -330,23 +341,19 @@ class FbAnalyzer:
             )
         ax.set_ylabel('Number')
         ax.set_xlabel('\nMember')
-    
-    
-    def total_number_of_reactions(df):
+
+    def plot_number_of_reactions(self):
         """
-        returns Series with number of
-        total usage of every reaction
+        Draw bar chart containing total number of reactions.
+
+        Returns
+        -------
+        None.
+
         """
-        df_mem_react = number_of_reactions_for_members(df)
+        df_mem_react = self.number_of_reactions_for_members()
         total_reactions = df_mem_react.sum()
-        return total_reactions
-    
-    
-    def plot_number_of_reactions(df):
-        """
-        bar chart for total_number_of_reactions()
-        """
-        total_reactions = total_number_of_reactions(df).drop('Total')
+        total_reactions = total_reactions.drop('Total')
         ax = total_reactions.plot.bar(
             legend=False,
             figsize=(15, 10),
@@ -357,10 +364,14 @@ class FbAnalyzer:
         ax.set_xlabel('\nReaction')
     
     
-    def plot_messages_by_hour(df):
+    def plot_messages_by_hour(self):
         """
-        bar chart for total messages sent
-        in every hour
+        Bar chart for total messages sent in every hour
+
+        Returns
+        -------
+        None.
+
         """
         df_stats = df['timestamp_ms']
         df_stats = pd.to_datetime(df_stats, unit='ms')
@@ -376,16 +387,18 @@ class FbAnalyzer:
         ax.set_ylabel('Count')
         ax.set_xlabel('\nHour')
 
-
-fb_analyzer = FbAnalyzer('message_1.json')
-data_dict = fb_analyzer.data_dict
-df = fb_analyzer.df
-members = fb_analyzer.members
-all_members = fb_analyzer.all_members
-statistics = fb_analyzer.get_statistics()
-member_count_words = fb_analyzer.count_words(['Marta'])
-reacted_messages = fb_analyzer.get_most_reacted_messages('plan', 4)
-# fb_analyzer.plot_by_day()
-# df_monthly = fb_analyzer.get_members_stats_monthly()
-fb_analyzer.plot_by_month_members(logaritmic=False)
-fb_analyzer.plot_by_month_total(logaritmic=False)
+if __name__ == "__main__":
+    fb_analyzer = FbAnalyzer('message_1.json')
+    data_dict = fb_analyzer.data_dict
+    df = fb_analyzer.df
+    members = fb_analyzer.members
+    all_members = fb_analyzer.all_members
+    statistics = fb_analyzer.get_statistics()
+    member_count_words = fb_analyzer.count_words(['elo'])
+    reacted_messages = fb_analyzer.get_most_reacted_messages('plan', 4)
+    # fb_analyzer.plot_by_day()
+    # df_monthly = fb_analyzer.get_members_stats_monthly()
+    # fb_analyzer.plot_by_month_members(logaritmic=False)
+    # fb_analyzer.plot_by_month_total(logaritmic=False)
+    # number_of_reactions_for_members = fb_analyzer.number_of_reactions_for_members()
+    # fb_analyzer.plot_messages_by_hour()
